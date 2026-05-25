@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
+import { adminService } from '../../services/adminService';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { CheckCircle2, XCircle, ChevronRight, FileText } from 'lucide-react';
 
 const API_URL = 'http://localhost:3000/admin';
@@ -56,7 +58,7 @@ export const DashboardPage = () => {
         }
     };
 
-    if (loading) return <div className="p-8 font-bold">Loading requests...</div>;
+    if (loading) return <LoadingSpinner message="Loading requests..." />;
 
     return (
         <div className="flex h-full relative">

@@ -1,5 +1,5 @@
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, Scale } from 'lucide-react';
 
 export const AdminLayout = () => {
     const location = useLocation();
@@ -40,6 +40,15 @@ export const AdminLayout = () => {
                     >
                         <Users className="w-5 h-5 mr-3" />
                         Admin Management
+                    </Link>
+                    <Link
+                        to="/disputes"
+                        className={`flex items-center px-4 py-3 rounded-md font-bold text-sm transition-colors ${
+                            location.pathname === '/disputes' ? 'bg-red-600 text-white shadow-md' : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                        }`}
+                    >
+                        <Scale className="w-5 h-5 mr-3" />
+                        Payment Disputes
                     </Link>
                 </nav>
 

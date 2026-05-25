@@ -1,0 +1,199 @@
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
+import { adminService } from '../../services/adminService';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+
+const API_URL = 'http://localhost:3000/admin';
+
+export const DisputesPage = () => {
+    const [disputes, setDisputes] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [selectedDispute, setSelectedDispute] = useState<any | null>(null);
+    const [isActionLoading, setIsActionLoading] = useState(false);
+
+    const fetchDisputes = async () => {
+        setIsLoading(true);
+        try {
+            const token = localStorage.getItem('admin_access_token');
+            const res = await axios.get(`${API_URL}/disputes`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setDisputes(res.data);
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to fetch disputes');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDisputes();
+    }, []);
+
+    const handleAction = async (orderId: string, action: 'force-approve' | 'uphold-rejection') => {
+        setIsActionLoading(true);
+        try {
+            const token = localStorage.getItem('admin_access_token');
+            await axios.post(`${API_URL}/orders/${orderId}/${action}`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert('Action completed successfully.');
+            setSelectedDispute(null);
+            fetchDisputes();
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Action failed.');
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
+    if (isLoading) {
+        return <LoadingSpinner message="Loading disputes..." />;
+    }
+
+    if (error) {
+        return <div className="p-8 font-sans font-bold text-red-500">{error}</div>;
+    }
+
+    return (
+        <div className="h-full flex flex-col font-sans">
+            <div className="bg-white border-b border-gray-200 px-8 py-6 shrink-0 shadow-sm z-10">
+                <h1 className="text-3xl font-black text-gray-900 tracking-tight">Payment Disputes</h1>
+                <p className="text-sm font-medium text-gray-500 mt-1">Review escalated payments and make binding decisions.</p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
+                {disputes.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full max-w-md mx-auto text-center">
+                        <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <h2 className="text-xl font-bold text-gray-900 mb-2">No active disputes</h2>
+                        <p className="text-gray-500 font-medium">All escalated payment issues have been resolved.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {disputes.map(dispute => (
+                            <div key={dispute.id} className="bg-white border border-gray-200 rounded-sm p-6 shadow-sm flex flex-col hover:shadow-md transition-shadow">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 className="font-black text-gray-900 text-lg">Order #{dispute.id.slice(0, 8)}</h3>
+                                        <p className="text-xs text-gray-500 font-bold">{dispute.shops?.name}</p>
+                                    </div>
+                                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-[10px] font-bold rounded-sm border border-blue-200">
+                                        ESCALATED
+                                    </span>
+                                </div>
+                                <div className="space-y-2 mb-6 flex-1">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500 font-medium">Total:</span>
+                                        <span className="font-bold text-gray-900">₱{dispute.total}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500 font-medium">Escalated On:</span>
+                                        <span className="font-semibold text-gray-700">{new Date(dispute.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setSelectedDispute(dispute)}
+                                    className="w-full py-2 bg-black hover:bg-gray-800 text-white font-bold rounded-sm text-sm transition-colors"
+                                >
+                                    Review Case
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Modal */}
+            <AnimatePresence>
+                {selectedDispute && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setSelectedDispute(null)}
+                            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl bg-white shadow-2xl z-50 rounded-sm flex flex-col max-h-[90vh]"
+                        >
+                            <div className="flex justify-between items-center p-6 border-b border-gray-200 shrink-0">
+                                <div>
+                                    <h3 className="text-2xl font-black text-gray-900">Dispute Review</h3>
+                                    <p className="text-sm font-medium text-gray-500">Order #{selectedDispute.id}</p>
+                                </div>
+                                <button onClick={() => setSelectedDispute(null)} className="p-2 text-gray-400 hover:text-black transition-colors rounded-full hover:bg-gray-100">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-6 flex flex-col md:flex-row gap-8">
+                                <div className="flex-1 space-y-6">
+                                    <div>
+                                        <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2 mb-3">Shop's Rejection Reason</h4>
+                                        <div className="bg-red-50 border border-red-100 p-4 rounded-sm text-red-800 font-medium text-sm">
+                                            {selectedDispute.shop_rejection_reason || 'No reason provided by shop.'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2 mb-3">Student's Dispute Explanation</h4>
+                                        <div className="bg-blue-50 border border-blue-100 p-4 rounded-sm text-blue-800 font-medium text-sm">
+                                            {selectedDispute.dispute_reason || 'No explanation provided by student.'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2 mb-3">Order Details</h4>
+                                        <div className="bg-gray-50 p-4 rounded-sm text-sm space-y-2 font-medium text-gray-700 border border-gray-200">
+                                            <p><strong>Shop:</strong> {selectedDispute.shops?.name}</p>
+                                            <p><strong>Amount Due:</strong> ₱{selectedDispute.total}</p>
+                                            <p><strong>Ref Number:</strong> {selectedDispute.payment_receipts?.[0]?.reference_number || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex-1 flex flex-col">
+                                    <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2 mb-3">Uploaded Receipt</h4>
+                                    <div className="flex-1 border border-gray-200 rounded-sm bg-gray-50 flex items-center justify-center p-2 min-h-[300px]">
+                                        {selectedDispute.payment_receipts?.[0]?.receipt_url ? (
+                                            <img 
+                                                src={selectedDispute.payment_receipts[0].receipt_url} 
+                                                alt="Receipt" 
+                                                className="max-w-full max-h-full object-contain"
+                                            />
+                                        ) : (
+                                            <span className="text-gray-400 font-medium text-sm italic">No receipt image found</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6 border-t border-gray-200 bg-gray-50 shrink-0 flex justify-end space-x-4">
+                                <button
+                                    onClick={() => handleAction(selectedDispute.id, 'uphold-rejection')}
+                                    disabled={isActionLoading}
+                                    className="px-6 py-3 font-bold text-red-600 bg-white border border-red-200 hover:bg-red-50 hover:border-red-600 transition-colors rounded-sm disabled:opacity-50"
+                                >
+                                    Uphold Rejection
+                                </button>
+                                <button
+                                    onClick={() => handleAction(selectedDispute.id, 'force-approve')}
+                                    disabled={isActionLoading}
+                                    className="px-6 py-3 font-bold text-white bg-green-600 hover:bg-green-700 transition-colors rounded-sm disabled:opacity-50 flex items-center"
+                                >
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                    Force Approve Payment
+                                </button>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
