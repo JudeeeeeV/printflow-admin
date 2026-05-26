@@ -11,6 +11,8 @@ export const DisputesPage = () => {
     const [error, setError] = useState('');
     const [selectedDispute, setSelectedDispute] = useState<any | null>(null);
     const [isActionLoading, setIsActionLoading] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const PAGE_SIZE = 10;
 
     const fetchDisputes = async () => {
         setIsLoading(true);
@@ -71,37 +73,70 @@ export const DisputesPage = () => {
                         <p className="text-gray-500 font-medium">All escalated payment issues have been resolved.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {disputes.map(dispute => (
-                            <div key={dispute.id} className="bg-white border border-gray-200 rounded-sm p-6 shadow-sm flex flex-col hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h3 className="font-black text-gray-900 text-lg">Order #{String(dispute.id).slice(0, 8)}</h3>
-                                        <p className="text-xs text-gray-500 font-bold">{dispute.shops?.name}</p>
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {disputes
+                                .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+                                .map(dispute => (
+                                <div key={dispute.id} className="bg-white border border-gray-200 rounded-sm p-6 shadow-sm flex flex-col hover:shadow-md transition-shadow">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h3 className="font-black text-gray-900 text-lg">Order #{String(dispute.id).slice(0, 8)}</h3>
+                                            <p className="text-xs text-gray-500 font-bold">{dispute.shops?.name}</p>
+                                        </div>
+                                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-[10px] font-bold rounded-sm border border-blue-200">
+                                            ESCALATED
+                                        </span>
                                     </div>
-                                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-[10px] font-bold rounded-sm border border-blue-200">
-                                        ESCALATED
-                                    </span>
+                                    <div className="space-y-2 mb-6 flex-1">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500 font-medium">Total:</span>
+                                            <span className="font-bold text-gray-900">₱{dispute.total}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500 font-medium">Escalated On:</span>
+                                            <span className="font-semibold text-gray-700">{new Date(dispute.created_at).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setSelectedDispute(dispute)}
+                                        className="w-full py-2 bg-black hover:bg-gray-800 text-white font-bold rounded-sm text-sm transition-colors"
+                                    >
+                                        Review Case
+                                    </button>
                                 </div>
-                                <div className="space-y-2 mb-6 flex-1">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500 font-medium">Total:</span>
-                                        <span className="font-bold text-gray-900">₱{dispute.total}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500 font-medium">Escalated On:</span>
-                                        <span className="font-semibold text-gray-700">{new Date(dispute.created_at).toLocaleDateString()}</span>
-                                    </div>
+                            ))}
+                        </div>
+                        {/* Pagination */}
+                        {Math.ceil(disputes.length / PAGE_SIZE) > 1 && (
+                            <div className="flex items-center justify-between mt-6">
+                                <span className="text-xs font-medium text-gray-500">Page {currentPage} of {Math.ceil(disputes.length / PAGE_SIZE)} · {disputes.length} total</span>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="px-3 py-1.5 text-xs font-bold border border-gray-300 rounded-sm bg-white text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >Prev</button>
+                                    {Array.from({ length: Math.ceil(disputes.length / PAGE_SIZE) }, (_, i) => i + 1).map(page => (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-colors ${
+                                                currentPage === page
+                                                    ? 'bg-gray-900 text-white border-gray-900'
+                                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                            }`}
+                                        >{page}</button>
+                                    ))}
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(Math.ceil(disputes.length / PAGE_SIZE), p + 1))}
+                                        disabled={currentPage === Math.ceil(disputes.length / PAGE_SIZE)}
+                                        className="px-3 py-1.5 text-xs font-bold border border-gray-300 rounded-sm bg-white text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >Next</button>
                                 </div>
-                                <button 
-                                    onClick={() => setSelectedDispute(dispute)}
-                                    className="w-full py-2 bg-black hover:bg-gray-800 text-white font-bold rounded-sm text-sm transition-colors"
-                                >
-                                    Review Case
-                                </button>
                             </div>
-                        ))}
-                    </div>
+                        )}
+                    </>
                 )}
             </div>
 

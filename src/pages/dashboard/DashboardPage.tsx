@@ -13,6 +13,8 @@ export const DashboardPage = () => {
     const [isVerifying, setIsVerifying] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
     const [showRejectInput, setShowRejectInput] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const PAGE_SIZE = 10;
 
     const token = localStorage.getItem('admin_access_token');
 
@@ -73,40 +75,73 @@ export const DashboardPage = () => {
                             <p className="text-gray-500 font-bold text-lg">You're all caught up!</p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
-                            <AnimatePresence>
-                                {shops.map((shop, i) => (
-                                    <motion.div
-                                        key={shop.id}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        transition={{ delay: i * 0.05 }}
-                                        onClick={() => setSelectedShop(shop)}
-                                        className={`bg-white border p-6 rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-all flex items-center justify-between ${
-                                            selectedShop?.id === shop.id ? 'border-black ring-1 ring-black' : 'border-gray-200 hover:border-gray-300'
-                                        }`}
-                                    >
-                                        <div>
-                                            <h3 className="text-xl font-black text-gray-900">{shop.name}</h3>
-                                            <p className="text-sm text-gray-500 font-medium mt-1">
-                                                Submitted: {new Date(shop.updated_at).toLocaleDateString()}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center space-x-6">
-                                            {shop.ai_suggestion && (
-                                                <div className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                                    shop.ai_suggestion === 'ACCEPT' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                                }`}>
-                                                    AI: {shop.ai_suggestion}
-                                                </div>
-                                            )}
-                                            <ChevronRight className="w-5 h-5 text-gray-400" />
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
-                        </div>
+                        <>
+                            <div className="space-y-4">
+                                <AnimatePresence>
+                                    {shops
+                                        .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+                                        .map((shop, i) => (
+                                        <motion.div
+                                            key={shop.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            transition={{ delay: i * 0.05 }}
+                                            onClick={() => setSelectedShop(shop)}
+                                            className={`bg-white border p-6 rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-all flex items-center justify-between ${
+                                                selectedShop?.id === shop.id ? 'border-black ring-1 ring-black' : 'border-gray-200 hover:border-gray-300'
+                                            }`}
+                                        >
+                                            <div>
+                                                <h3 className="text-xl font-black text-gray-900">{shop.name}</h3>
+                                                <p className="text-sm text-gray-500 font-medium mt-1">
+                                                    Submitted: {new Date(shop.updated_at).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center space-x-6">
+                                                {shop.ai_suggestion && (
+                                                    <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                                        shop.ai_suggestion === 'ACCEPT' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                    }`}>
+                                                        AI: {shop.ai_suggestion}
+                                                    </div>
+                                                )}
+                                                <ChevronRight className="w-5 h-5 text-gray-400" />
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
+                            {/* Pagination */}
+                            {Math.ceil(shops.length / PAGE_SIZE) > 1 && (
+                                <div className="flex items-center justify-between mt-6">
+                                    <span className="text-xs font-medium text-gray-500">Page {currentPage} of {Math.ceil(shops.length / PAGE_SIZE)} · {shops.length} total</span>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={currentPage === 1}
+                                            className="px-3 py-1.5 text-xs font-bold border border-gray-300 rounded-sm bg-white text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >Prev</button>
+                                        {Array.from({ length: Math.ceil(shops.length / PAGE_SIZE) }, (_, i) => i + 1).map(page => (
+                                            <button
+                                                key={page}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-colors ${
+                                                    currentPage === page
+                                                        ? 'bg-gray-900 text-white border-gray-900'
+                                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                                }`}
+                                            >{page}</button>
+                                        ))}
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.min(Math.ceil(shops.length / PAGE_SIZE), p + 1))}
+                                            disabled={currentPage === Math.ceil(shops.length / PAGE_SIZE)}
+                                            className="px-3 py-1.5 text-xs font-bold border border-gray-300 rounded-sm bg-white text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >Next</button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
