@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { adminService } from '../../services/adminService';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { CheckCircle2, XCircle, ChevronRight, FileText } from 'lucide-react';
 

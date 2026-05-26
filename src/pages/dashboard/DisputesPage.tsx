@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { adminService } from '../../services/adminService';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 
 const API_URL = 'http://localhost:3000/admin';
@@ -77,7 +76,7 @@ export const DisputesPage = () => {
                             <div key={dispute.id} className="bg-white border border-gray-200 rounded-sm p-6 shadow-sm flex flex-col hover:shadow-md transition-shadow">
                                 <div className="flex justify-between items-start mb-4">
                                     <div>
-                                        <h3 className="font-black text-gray-900 text-lg">Order #{dispute.id.slice(0, 8)}</h3>
+                                        <h3 className="font-black text-gray-900 text-lg">Order #{String(dispute.id).slice(0, 8)}</h3>
                                         <p className="text-xs text-gray-500 font-bold">{dispute.shops?.name}</p>
                                     </div>
                                     <span className="px-2 py-1 bg-blue-100 text-blue-800 text-[10px] font-bold rounded-sm border border-blue-200">
@@ -109,19 +108,19 @@ export const DisputesPage = () => {
             {/* Modal */}
             <AnimatePresence>
                 {selectedDispute && (
-                    <>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setSelectedDispute(null)}
-                            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         />
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl bg-white shadow-2xl z-50 rounded-sm flex flex-col max-h-[90vh]"
+                            className="relative w-full max-w-4xl bg-white shadow-2xl rounded-sm flex flex-col max-h-[90vh] z-10"
                         >
                             <div className="flex justify-between items-center p-6 border-b border-gray-200 shrink-0">
                                 <div>
@@ -152,7 +151,7 @@ export const DisputesPage = () => {
                                         <div className="bg-gray-50 p-4 rounded-sm text-sm space-y-2 font-medium text-gray-700 border border-gray-200">
                                             <p><strong>Shop:</strong> {selectedDispute.shops?.name}</p>
                                             <p><strong>Amount Due:</strong> ₱{selectedDispute.total}</p>
-                                            <p><strong>Ref Number:</strong> {selectedDispute.payment_receipts?.[0]?.reference_number || 'N/A'}</p>
+                                            <p><strong>Ref Number:</strong> {(Array.isArray(selectedDispute.payment_receipts) ? selectedDispute.payment_receipts[0] : selectedDispute.payment_receipts)?.reference_number || 'N/A'}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -160,9 +159,9 @@ export const DisputesPage = () => {
                                 <div className="flex-1 flex flex-col">
                                     <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-2 mb-3">Uploaded Receipt</h4>
                                     <div className="flex-1 border border-gray-200 rounded-sm bg-gray-50 flex items-center justify-center p-2 min-h-[300px]">
-                                        {selectedDispute.payment_receipts?.[0]?.receipt_url ? (
+                                        {(Array.isArray(selectedDispute.payment_receipts) ? selectedDispute.payment_receipts[0] : selectedDispute.payment_receipts)?.receipt_url ? (
                                             <img 
-                                                src={selectedDispute.payment_receipts[0].receipt_url} 
+                                                src={(Array.isArray(selectedDispute.payment_receipts) ? selectedDispute.payment_receipts[0] : selectedDispute.payment_receipts).receipt_url} 
                                                 alt="Receipt" 
                                                 className="max-w-full max-h-full object-contain"
                                             />
@@ -191,7 +190,7 @@ export const DisputesPage = () => {
                                 </button>
                             </div>
                         </motion.div>
-                    </>
+                    </div>
                 )}
             </AnimatePresence>
         </div>
