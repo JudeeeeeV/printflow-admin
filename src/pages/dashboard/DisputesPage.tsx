@@ -3,7 +3,7 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 
-const API_URL = 'http://localhost:3000/admin';
+const API_URL = 'https://printflow-backend-wen3.onrender.com/admin';
 
 export const DisputesPage = () => {
     const [disputes, setDisputes] = useState<any[]>([]);

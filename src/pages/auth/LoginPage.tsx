@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3000/admin';
+const API_URL = 'https://printflow-backend-wen3.onrender.com/admin';
 
 export const LoginPage = () => {
     const navigate = useNavigate();

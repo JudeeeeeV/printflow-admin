@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { CheckCircle2, XCircle, ChevronRight, FileText } from 'lucide-react';
 
-const API_URL = 'http://localhost:3000/admin';
+const API_URL = 'https://printflow-backend-wen3.onrender.com/admin';
 
 export const DashboardPage = () => {
     const [shops, setShops] = useState<any[]>([]);

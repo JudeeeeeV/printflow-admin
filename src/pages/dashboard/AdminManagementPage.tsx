@@ -3,7 +3,7 @@ import axios from 'axios';
 import { UserPlus } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const API_URL = 'http://localhost:3000/admin';
+const API_URL = 'https://printflow-backend-wen3.onrender.com/admin';
 
 export const AdminManagementPage = () => {
     const [email, setEmail] = useState('');
