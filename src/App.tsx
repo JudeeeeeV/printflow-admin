@@ -9,28 +9,28 @@ import { AdminManagementPage } from './pages/dashboard/AdminManagementPage';
 import { DisputesPage } from './pages/dashboard/DisputesPage';
 
 function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        {/* Auth Routes */}
-        <Route element={<AuthLayout />}>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/setup-2fa" element={<Setup2FAPage />} />
-          <Route path="/verify-2fa" element={<Verify2FAPage />} />
-        </Route>
+ return (
+ <BrowserRouter>
+ <Routes>
+ {/* Auth Routes */}
+ <Route element={<AuthLayout />}>
+ <Route path="/login" element={<LoginPage />} />
+ <Route path="/setup-2fa" element={<Setup2FAPage />} />
+ <Route path="/verify-2fa" element={<Verify2FAPage />} />
+ </Route>
 
-        {/* Protected Admin Routes */}
-        <Route element={<AdminLayout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/manage" element={<AdminManagementPage />} />
-          <Route path="/disputes" element={<DisputesPage />} />
-        </Route>
+ {/* Protected Admin Routes */}
+ <Route element={<AdminLayout />}>
+ <Route path="/" element={<DashboardPage />} />
+ <Route path="/manage" element={<AdminManagementPage />} />
+ <Route path="/disputes" element={<DisputesPage />} />
+ </Route>
 
-        {/* Catch all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
-  );
+ {/* Catch all */}
+ <Route path="*" element={<Navigate to="/" replace />} />
+ </Routes>
+ </BrowserRouter>
+ );
 }
 
 export default App;
