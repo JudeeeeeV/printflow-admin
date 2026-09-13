@@ -149,7 +149,7 @@ export const DisputesPage = () => {
  animate={{ opacity: 1 }}
  exit={{ opacity: 0 }}
  onClick={() => setSelectedDispute(null)}
- className="absolute inset-0 bg-carbon-blue-60 hover:bg-carbon-blue-70/40 backdrop-blur-sm"
+ className="absolute inset-0 bg-carbon-blue-100/40 backdrop-blur-sm"
  />
  <motion.div
  initial={{ opacity: 0, scale: 0.95 }}

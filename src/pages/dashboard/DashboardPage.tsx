@@ -155,7 +155,7 @@ export const DashboardPage = () => {
  animate={{ opacity: 1 }}
  exit={{ opacity: 0 }}
  onClick={() => setSelectedShop(null)}
- className="fixed inset-0 bg-carbon-blue-60 hover:bg-carbon-blue-70/40 backdrop-blur-sm z-30"
+ className="fixed inset-0 bg-carbon-blue-100/40 backdrop-blur-sm z-30"
  />
  <motion.div
  initial={{ x: '100%', boxShadow: '-20px 0 40px rgba(0,0,0,0)' }}

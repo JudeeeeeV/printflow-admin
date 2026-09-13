@@ -17,7 +17,7 @@ export const AdminLayout = () => {
  return (
  <div className="flex h-screen bg-carbon-gray-10 font-sans">
  {/* Sidebar */}
- <aside className="w-64 bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white flex flex-col z-20">
+ <aside className="w-64 bg-carbon-blue-60 text-white flex flex-col z-20">
  <div className="p-6 border-b border-gray-800 shrink-0">
  <h1 className="text-2xl font-black tracking-tight">PrintFlow <span className="text-carbon-gray-100">Admin</span></h1>
  </div>
