@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { UserFollow } from '@carbon/icons-react';
 import { motion } from 'framer-motion';
-
-const API_URL = 'https://printflow-backend-wen3.onrender.com/admin';
+import { ADMIN_API_URL as API_URL } from '../../config/runtime';
 
 export const AdminManagementPage = () => {
  const [email, setEmail] = useState('');

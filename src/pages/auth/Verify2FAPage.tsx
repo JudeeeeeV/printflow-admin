@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import axios from 'axios';
-
-const API_URL = 'https://printflow-backend-wen3.onrender.com/admin';
+import { ADMIN_API_URL as API_URL } from '../../config/runtime';
 
 export const Verify2FAPage = () => {
  const navigate = useNavigate();

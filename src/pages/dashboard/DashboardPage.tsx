@@ -3,8 +3,7 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TableSkeleton } from '../../components/common/TableSkeleton';
 import { CheckmarkFilled, CloseOutline, ChevronRight, Document } from '@carbon/icons-react';
-
-const API_URL = 'https://printflow-backend-wen3.onrender.com/admin';
+import { ADMIN_API_URL as API_URL } from '../../config/runtime';
 
 export const DashboardPage = () => {
  const [shops, setShops] = useState<any[]>([]);
@@ -183,7 +182,7 @@ export const DashboardPage = () => {
  {selectedShop.business_permit_url ? (
  <div className="border border-[#e0e0e0] overflow-hidden bg-carbon-gray-10 relative aspect-[3/4]">
  {/* Ideally use an iframe or PDF viewer here if it's a PDF */}
- <embed src={selectedShop.business_permit_url} className="w-full h-full object-contain" />
+ <iframe src={selectedShop.business_permit_url} sandbox="" referrerPolicy="no-referrer" title="Business permit" className="w-full h-full object-contain" />
  </div>
  ) : (
  <div className="p-8 bg-carbon-gray-10 border border-dashed border-[#8d8d8d] text-center">

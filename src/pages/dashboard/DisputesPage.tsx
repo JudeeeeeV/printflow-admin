@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TableSkeleton } from '../../components/common/TableSkeleton';
-
-const API_URL = 'https://printflow-backend-wen3.onrender.com/admin';
+import { ADMIN_API_URL as API_URL } from '../../config/runtime';
 
 export const DisputesPage = () => {
  const [disputes, setDisputes] = useState<any[]>([]);
