@@ -7,6 +7,7 @@ import { Verify2FAPage } from './pages/auth/Verify2FAPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { AdminManagementPage } from './pages/dashboard/AdminManagementPage';
 import { DisputesPage } from './pages/dashboard/DisputesPage';
+import { PrinterAgentsPage } from './pages/dashboard/PrinterAgentsPage';
 
 function App() {
  return (
@@ -24,6 +25,7 @@ function App() {
  <Route path="/" element={<DashboardPage />} />
  <Route path="/manage" element={<AdminManagementPage />} />
  <Route path="/disputes" element={<DisputesPage />} />
+ <Route path="/printer-agents" element={<PrinterAgentsPage />} />
  </Route>
 
  {/* Catch all */}

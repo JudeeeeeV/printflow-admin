@@ -1,5 +1,5 @@
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
-import { Dashboard, Group, Logout, Scales } from '@carbon/icons-react';
+import { Dashboard, Group, Logout, Scales, Printer } from '@carbon/icons-react';
 
 export const AdminLayout = () => {
  const location = useLocation();
@@ -49,6 +49,15 @@ export const AdminLayout = () => {
  >
  <Scales className="w-5 h-5 mr-3" />
  Payment Disputes
+ </Link>
+ <Link
+ to="/printer-agents"
+ className={`flex items-center px-4 py-3 font-bold text-sm transition-colors ${
+ location.pathname === '/printer-agents' ? 'bg-carbon-gray-100 text-white ' : 'text-gray-300 hover:text-white'
+ }`}
+ >
+ <Printer className="w-5 h-5 mr-3" />
+ Printer Agents
  </Link>
  </nav>
 
