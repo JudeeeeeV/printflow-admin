@@ -1,36 +1,61 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TableSkeleton } from '../../components/common/TableSkeleton';
+import { AlertModal } from '../../components/common/AlertModal';
 import { ADMIN_API_URL as API_URL } from '../../config/runtime';
 
+interface PaymentReceipt {
+ reference_number?: string | null;
+ receipt_url?: string | null;
+}
+
+interface Dispute {
+ id: string;
+ total: number;
+ created_at: string;
+ shop_rejection_reason?: string | null;
+ dispute_reason?: string | null;
+ shops?: { name?: string | null } | null;
+ payment_receipts?: PaymentReceipt | PaymentReceipt[] | null;
+}
+
+const errorMessage = (error: unknown, fallback: string) => {
+ if (axios.isAxiosError<{ message?: string }>(error)) {
+ return error.response?.data?.message || fallback;
+ }
+ return error instanceof Error ? error.message : fallback;
+};
+
 export const DisputesPage = () => {
- const [disputes, setDisputes] = useState<any[]>([]);
+ const [disputes, setDisputes] = useState<Dispute[]>([]);
  const [isLoading, setIsLoading] = useState(true);
  const [error, setError] = useState('');
- const [selectedDispute, setSelectedDispute] = useState<any | null>(null);
+ const [selectedDispute, setSelectedDispute] = useState<Dispute | null>(null);
  const [isActionLoading, setIsActionLoading] = useState(false);
  const [currentPage, setCurrentPage] = useState(1);
+ const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
  const PAGE_SIZE = 10;
 
- const fetchDisputes = async () => {
+ const fetchDisputes = useCallback(async () => {
  setIsLoading(true);
  try {
  const token = localStorage.getItem('admin_access_token');
- const res = await axios.get(`${API_URL}/disputes`, {
+ const res = await axios.get<Dispute[]>(`${API_URL}/disputes`, {
  headers: { Authorization: `Bearer ${token}` }
  });
  setDisputes(res.data);
- } catch (err: any) {
- setError(err.response?.data?.message || 'Failed to fetch disputes');
+ } catch (requestError: unknown) {
+ setError(errorMessage(requestError, 'Failed to fetch disputes'));
  } finally {
  setIsLoading(false);
  }
- };
+ }, []);
 
  useEffect(() => {
- fetchDisputes();
- }, []);
+ const timer = window.setTimeout(() => void fetchDisputes(), 0);
+ return () => window.clearTimeout(timer);
+ }, [fetchDisputes]);
 
  const handleAction = async (orderId: string, action: 'force-approve' | 'uphold-rejection') => {
  setIsActionLoading(true);
@@ -39,15 +64,24 @@ export const DisputesPage = () => {
  await axios.post(`${API_URL}/orders/${orderId}/${action}`, {}, {
  headers: { Authorization: `Bearer ${token}` }
  });
- alert('Action completed successfully.');
+ setNotice({ title: 'Action completed', message: 'The dispute decision was saved successfully.' });
  setSelectedDispute(null);
  fetchDisputes();
- } catch (err: any) {
- alert(err.response?.data?.message || 'Action failed.');
+ } catch (requestError: unknown) {
+ setNotice({
+ title: 'Action failed',
+ message: errorMessage(requestError, 'The dispute decision could not be saved.'),
+ });
  } finally {
  setIsActionLoading(false);
  }
  };
+
+ const selectedReceipt = selectedDispute
+ ? Array.isArray(selectedDispute.payment_receipts)
+ ? selectedDispute.payment_receipts[0]
+ : selectedDispute.payment_receipts
+ : null;
 
  if (isLoading) {
  return <TableSkeleton columns={5} rows={5} />;
@@ -185,7 +219,7 @@ export const DisputesPage = () => {
  <div className="bg-carbon-gray-10 p-4 text-sm space-y-2 font-medium text-gray-700 border border-[#e0e0e0]">
  <p><strong>Shop:</strong> {selectedDispute.shops?.name}</p>
  <p><strong>Amount Due:</strong> ₱{selectedDispute.total}</p>
- <p><strong>Ref Number:</strong> {(Array.isArray(selectedDispute.payment_receipts) ? selectedDispute.payment_receipts[0] : selectedDispute.payment_receipts)?.reference_number || 'N/A'}</p>
+ <p><strong>Ref Number:</strong> {selectedReceipt?.reference_number || 'N/A'}</p>
  </div>
  </div>
  </div>
@@ -193,9 +227,9 @@ export const DisputesPage = () => {
  <div className="flex-1 flex flex-col">
  <h4 className="font-bold text-carbon-gray-100 border-b border-[#e0e0e0] pb-2 mb-3">Uploaded Receipt</h4>
  <div className="flex-1 border border-[#e0e0e0] bg-carbon-gray-10 flex items-center justify-center p-2 min-h-[300px]">
- {(Array.isArray(selectedDispute.payment_receipts) ? selectedDispute.payment_receipts[0] : selectedDispute.payment_receipts)?.receipt_url ? (
+ {selectedReceipt?.receipt_url ? (
  <img 
- src={(Array.isArray(selectedDispute.payment_receipts) ? selectedDispute.payment_receipts[0] : selectedDispute.payment_receipts).receipt_url} 
+ src={selectedReceipt.receipt_url}
  alt="Receipt" 
  className="max-w-full max-h-full object-contain"
  />
@@ -227,6 +261,12 @@ export const DisputesPage = () => {
  </div>
  )}
  </AnimatePresence>
+ <AlertModal
+ isOpen={Boolean(notice)}
+ title={notice?.title || ''}
+ message={notice?.message || ''}
+ onClose={() => setNotice(null)}
+ />
  </div>
  );
 };

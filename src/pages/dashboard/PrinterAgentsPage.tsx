@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { Printer, Renew, TrashCan } from '@carbon/icons-react';
 import { ADMIN_API_URL as API_URL } from '../../config/runtime';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
 
 interface PrinterAgent {
   id: string;
@@ -34,6 +35,7 @@ export const PrinterAgentsPage: React.FC = () => {
   const [agents, setAgents] = useState<PrinterAgent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [agentToRevoke, setAgentToRevoke] = useState<PrinterAgent | null>(null);
   const [error, setError] = useState('');
 
   const requestHeaders = () => ({
@@ -79,7 +81,6 @@ export const PrinterAgentsPage: React.FC = () => {
   };
 
   const revoke = async (agent: PrinterAgent) => {
-    if (!window.confirm(`Revoke ${agent.name} for ${shopName(agent)}?`)) return;
     setPendingId(agent.id);
     try {
       await axios.post(`${API_URL}/daemon-devices/${agent.id}/revoke`, {}, {
@@ -90,6 +91,7 @@ export const PrinterAgentsPage: React.FC = () => {
       setError(requestErrorMessage(requestError, 'Failed to revoke printer agent.'));
     } finally {
       setPendingId(null);
+      setAgentToRevoke(null);
     }
   };
 
@@ -154,7 +156,7 @@ export const PrinterAgentsPage: React.FC = () => {
                         title="Rescan printers"
                       ><Renew className="h-5 w-5" /></button>
                       <button
-                        onClick={() => void revoke(agent)}
+                        onClick={() => setAgentToRevoke(agent)}
                         disabled={Boolean(agent.revoked_at) || pendingId === agent.id}
                         className="p-2 text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-gray-300"
                         aria-label={`Revoke ${agent.name}`}
@@ -168,6 +170,18 @@ export const PrinterAgentsPage: React.FC = () => {
           </table>
         </div>
       </div>
+      <ConfirmModal
+        isOpen={Boolean(agentToRevoke)}
+        title="Revoke printer agent?"
+        message={agentToRevoke ? `${agentToRevoke.name} will be removed from ${shopName(agentToRevoke)} and must be registered again before it can print.` : ''}
+        confirmLabel="Revoke agent"
+        cancelLabel="Keep connected"
+        isBusy={Boolean(agentToRevoke && pendingId === agentToRevoke.id)}
+        onCancel={() => setAgentToRevoke(null)}
+        onConfirm={() => {
+          if (agentToRevoke) void revoke(agentToRevoke);
+        }}
+      />
     </div>
   );
 };

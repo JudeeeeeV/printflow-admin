@@ -1,25 +1,35 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TableSkeleton } from '../../components/common/TableSkeleton';
+import { AlertModal } from '../../components/common/AlertModal';
 import { CheckmarkFilled, CloseOutline, ChevronRight, Document } from '@carbon/icons-react';
 import { ADMIN_API_URL as API_URL } from '../../config/runtime';
 
+interface PendingShop {
+ id: string;
+ name: string;
+ updated_at: string;
+ business_permit_url?: string | null;
+ ai_suggestion?: 'ACCEPT' | 'DENY' | null;
+ ai_reasoning?: string | null;
+}
+
 export const DashboardPage = () => {
- const [shops, setShops] = useState<any[]>([]);
+ const [shops, setShops] = useState<PendingShop[]>([]);
  const [loading, setLoading] = useState(true);
- const [selectedShop, setSelectedShop] = useState<any | null>(null);
+ const [selectedShop, setSelectedShop] = useState<PendingShop | null>(null);
  const [isVerifying, setIsVerifying] = useState(false);
  const [rejectReason, setRejectReason] = useState('');
  const [showRejectInput, setShowRejectInput] = useState(false);
  const [currentPage, setCurrentPage] = useState(1);
+ const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
  const PAGE_SIZE = 10;
 
- const token = localStorage.getItem('admin_access_token');
-
- const fetchShops = async () => {
+ const fetchShops = useCallback(async () => {
  try {
- const res = await axios.get(`${API_URL}/shops/pending`, {
+ const token = localStorage.getItem('admin_access_token');
+ const res = await axios.get<PendingShop[]>(`${API_URL}/shops/pending`, {
  headers: { Authorization: `Bearer ${token}` }
  });
  setShops(res.data);
@@ -28,13 +38,15 @@ export const DashboardPage = () => {
  } finally {
  setLoading(false);
  }
- };
-
- useEffect(() => {
- fetchShops();
  }, []);
 
+ useEffect(() => {
+ const timer = window.setTimeout(() => void fetchShops(), 0);
+ return () => window.clearTimeout(timer);
+ }, [fetchShops]);
+
  const handleVerify = async (status: 'VERIFIED' | 'REJECTED') => {
+ if (!selectedShop) return;
  if (status === 'REJECTED' && !rejectReason) {
  setShowRejectInput(true);
  return;
@@ -42,6 +54,7 @@ export const DashboardPage = () => {
 
  setIsVerifying(true);
  try {
+ const token = localStorage.getItem('admin_access_token');
  await axios.post(`${API_URL}/shops/${selectedShop.id}/verify`, { status, reason: rejectReason }, {
  headers: { Authorization: `Bearer ${token}` }
  });
@@ -52,7 +65,11 @@ export const DashboardPage = () => {
  setRejectReason('');
  setShowRejectInput(false);
  } catch (err) {
- alert('Failed to process verification request');
+ console.error('Failed to process verification request', err);
+ setNotice({
+ title: 'Verification failed',
+ message: 'The verification request could not be processed. Please try again.',
+ });
  } finally {
  setIsVerifying(false);
  }
@@ -110,6 +127,12 @@ export const DashboardPage = () => {
  </motion.div>
  ))}
  </AnimatePresence>
+ <AlertModal
+ isOpen={Boolean(notice)}
+ title={notice?.title || ''}
+ message={notice?.message || ''}
+ onClose={() => setNotice(null)}
+ />
  </div>
  {/* Pagination */}
  {Math.ceil(shops.length / PAGE_SIZE) > 1 && (
