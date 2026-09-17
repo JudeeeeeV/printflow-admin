@@ -40,10 +40,7 @@ export const DisputesPage = () => {
  const fetchDisputes = useCallback(async () => {
  setIsLoading(true);
  try {
- const token = localStorage.getItem('admin_access_token');
- const res = await axios.get<Dispute[]>(`${API_URL}/disputes`, {
- headers: { Authorization: `Bearer ${token}` }
- });
+ const res = await axios.get<Dispute[]>(`${API_URL}/disputes`);
  setDisputes(res.data);
  } catch (requestError: unknown) {
  setError(errorMessage(requestError, 'Failed to fetch disputes'));
@@ -60,10 +57,7 @@ export const DisputesPage = () => {
  const handleAction = async (orderId: string, action: 'force-approve' | 'uphold-rejection') => {
  setIsActionLoading(true);
  try {
- const token = localStorage.getItem('admin_access_token');
- await axios.post(`${API_URL}/orders/${orderId}/${action}`, {}, {
- headers: { Authorization: `Bearer ${token}` }
- });
+ await axios.post(`${API_URL}/orders/${orderId}/${action}`, {});
  setNotice({ title: 'Action completed', message: 'The dispute decision was saved successfully.' });
  setSelectedDispute(null);
  fetchDisputes();

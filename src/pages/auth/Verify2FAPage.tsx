@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ADMIN_API_URL as API_URL } from '../../config/runtime';
 
@@ -9,30 +9,18 @@ export const Verify2FAPage = () => {
  const [error, setError] = useState('');
  const [loading, setLoading] = useState(false);
 
- const tempToken = React.useRef(localStorage.getItem('admin_temp_token')).current;
- 
- if (!tempToken) {
- return <Navigate to="/login" replace />;
- }
-
  const handleSubmit = async (e: React.FormEvent) => {
  e.preventDefault();
  setError('');
  setLoading(true);
 
  try {
- const res = await axios.post(`${API_URL}/auth/verify-2fa`, { token }, {
- headers: { Authorization: `Bearer ${tempToken}` }
- });
-
- // Store full access token
- localStorage.setItem('admin_access_token', res.data.access_token);
- localStorage.removeItem('admin_temp_token');
-
+ await axios.post(`${API_URL}/auth/verify-2fa`, { token });
  // Go to dashboard
  navigate('/');
- } catch (err: any) {
- setError(err.response?.data?.message || 'Verification failed. Please check the code.');
+ } catch (err: unknown) {
+ const requestError = err as { response?: { data?: { message?: string } } };
+ setError(requestError.response?.data?.message || 'Verification failed. Please check the code.');
  } finally {
  setLoading(false);
  }

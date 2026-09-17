@@ -1,16 +1,28 @@
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { Dashboard, Group, Logout, Scales, Printer } from '@carbon/icons-react';
+import axios from 'axios';
+import { ADMIN_API_URL } from '../config/runtime';
 
 export const AdminLayout = () => {
  const location = useLocation();
- const token = localStorage.getItem('admin_access_token');
+ const [authenticated, setAuthenticated] = useState<boolean | null>(null);
 
- if (!token) {
+ useEffect(() => {
+ axios.get(`${ADMIN_API_URL}/auth/session`)
+ .then(() => setAuthenticated(true))
+ .catch(() => setAuthenticated(false));
+ }, []);
+
+ if (authenticated === null) return null;
+
+ if (!authenticated) {
  return <Navigate to="/login" replace />;
  }
 
- const handleLogout = () => {
- localStorage.removeItem('admin_access_token');
+ const handleLogout = async () => {
+ await axios.post(`${ADMIN_API_URL}/auth/logout`).catch(() => undefined);
+ setAuthenticated(false);
  window.location.href = '/login';
  };
 

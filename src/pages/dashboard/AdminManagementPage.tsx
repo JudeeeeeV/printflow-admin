@@ -11,8 +11,6 @@ export const AdminManagementPage = () => {
  const [message, setMessage] = useState('');
  const [error, setError] = useState('');
 
- const token = localStorage.getItem('admin_access_token');
-
  const handleAddAdmin = async (e: React.FormEvent) => {
  e.preventDefault();
  setLoading(true);
@@ -20,14 +18,13 @@ export const AdminManagementPage = () => {
  setError('');
 
  try {
- await axios.post(`${API_URL}/add`, { email, password }, {
- headers: { Authorization: `Bearer ${token}` }
- });
+ await axios.post(`${API_URL}/add`, { email, password });
  setMessage('Admin added successfully! They must set up 2FA on their first login.');
  setEmail('');
  setPassword('');
- } catch (err: any) {
- setError(err.response?.data?.message || 'Failed to add admin');
+ } catch (err: unknown) {
+ const requestError = err as { response?: { data?: { message?: string } } };
+ setError(requestError.response?.data?.message || 'Failed to add admin');
  } finally {
  setLoading(false);
  }

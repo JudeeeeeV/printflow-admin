@@ -38,16 +38,10 @@ export const PrinterAgentsPage: React.FC = () => {
   const [agentToRevoke, setAgentToRevoke] = useState<PrinterAgent | null>(null);
   const [error, setError] = useState('');
 
-  const requestHeaders = () => ({
-    Authorization: `Bearer ${localStorage.getItem('admin_access_token')}`,
-  });
-
   const loadAgents = useCallback(async (showLoader = false) => {
     if (showLoader) setIsLoading(true);
     try {
-      const response = await axios.get<PrinterAgent[]>(`${API_URL}/daemon-devices`, {
-        headers: requestHeaders(),
-      });
+      const response = await axios.get<PrinterAgent[]>(`${API_URL}/daemon-devices`);
       setAgents(response.data);
       setError('');
     } catch (requestError: unknown) {
@@ -69,9 +63,7 @@ export const PrinterAgentsPage: React.FC = () => {
   const rescan = async (agent: PrinterAgent) => {
     setPendingId(agent.id);
     try {
-      await axios.post(`${API_URL}/daemon-devices/${agent.id}/rescan`, {}, {
-        headers: requestHeaders(),
-      });
+      await axios.post(`${API_URL}/daemon-devices/${agent.id}/rescan`, {});
       window.setTimeout(() => void loadAgents(false), 1_500);
     } catch (requestError: unknown) {
       setError(requestErrorMessage(requestError, 'Failed to request printer rescan.'));
@@ -83,9 +75,7 @@ export const PrinterAgentsPage: React.FC = () => {
   const revoke = async (agent: PrinterAgent) => {
     setPendingId(agent.id);
     try {
-      await axios.post(`${API_URL}/daemon-devices/${agent.id}/revoke`, {}, {
-        headers: requestHeaders(),
-      });
+      await axios.post(`${API_URL}/daemon-devices/${agent.id}/revoke`, {});
       await loadAgents(false);
     } catch (requestError: unknown) {
       setError(requestErrorMessage(requestError, 'Failed to revoke printer agent.'));

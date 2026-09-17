@@ -23,19 +23,12 @@ export const Setup2FAPage = () => {
  setLoading(true);
 
  try {
- const tempToken = localStorage.getItem('admin_temp_token');
- const res = await axios.post(`${API_URL}/auth/setup-2fa`, { token }, {
- headers: { Authorization: `Bearer ${tempToken}` }
- });
-
- // Store full access token
- localStorage.setItem('admin_access_token', res.data.access_token);
- localStorage.removeItem('admin_temp_token');
-
+ await axios.post(`${API_URL}/auth/setup-2fa`, { token });
  // Go to dashboard
  navigate('/');
- } catch (err: any) {
- setError(err.response?.data?.message || 'Verification failed. Please check the code.');
+ } catch (err: unknown) {
+ const requestError = err as { response?: { data?: { message?: string } } };
+ setError(requestError.response?.data?.message || 'Verification failed. Please check the code.');
  } finally {
  setLoading(false);
  }

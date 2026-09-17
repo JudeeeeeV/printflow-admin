@@ -17,10 +17,7 @@ export const LoginPage = () => {
 
  try {
  const res = await axios.post(`${API_URL}/auth/login`, { email, password });
- const { requires_setup, requires_2fa, temp_token, qr_code_url, secret } = res.data;
-
- // Store temp token
- localStorage.setItem('admin_temp_token', temp_token);
+ const { requires_setup, requires_2fa, qr_code_url, secret } = res.data;
 
  if (requires_setup) {
  // Pass QR code data to setup page

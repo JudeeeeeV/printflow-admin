@@ -28,10 +28,7 @@ export const DashboardPage = () => {
 
  const fetchShops = useCallback(async () => {
  try {
- const token = localStorage.getItem('admin_access_token');
- const res = await axios.get<PendingShop[]>(`${API_URL}/shops/pending`, {
- headers: { Authorization: `Bearer ${token}` }
- });
+ const res = await axios.get<PendingShop[]>(`${API_URL}/shops/pending`);
  setShops(res.data);
  } catch (err) {
  console.error('Failed to fetch pending shops', err);
@@ -54,10 +51,7 @@ export const DashboardPage = () => {
 
  setIsVerifying(true);
  try {
- const token = localStorage.getItem('admin_access_token');
- await axios.post(`${API_URL}/shops/${selectedShop.id}/verify`, { status, reason: rejectReason }, {
- headers: { Authorization: `Bearer ${token}` }
- });
+ await axios.post(`${API_URL}/shops/${selectedShop.id}/verify`, { status, reason: rejectReason });
  
  // Remove shop from list
  setShops(prev => prev.filter(s => s.id !== selectedShop.id));
