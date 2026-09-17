@@ -8,13 +8,17 @@ axios.defaults.withCredentials = true
 axios.interceptors.response.use(
  response => response,
  error => {
- if (error?.response?.status === 401 && window.location.pathname !== '/login') {
- window.location.href = '/login'
+ const authenticationRoutes = ['/login', '/setup-2fa', '/verify-2fa']
+ const isAuthRoute = authenticationRoutes.some(route => window.location.pathname.startsWith(route))
+ if (
+ error?.response?.status === 401 &&
+ !isAuthRoute
+ ) {
+ window.dispatchEvent(new Event('printflow:admin-session-expired'))
  }
  return Promise.reject(error)
  },
 )
-
 createRoot(document.getElementById('root')!).render(
  <StrictMode>
  <App />

@@ -28,6 +28,9 @@ function App() {
  <Route path="/printer-agents" element={<PrinterAgentsPage />} />
  </Route>
 
+ {/* Explicit index.html handler for static hosts */}
+ <Route path="/index.html" element={<Navigate to="/" replace />} />
+
  {/* Catch all */}
  <Route path="*" element={<Navigate to="/" replace />} />
  </Routes>
