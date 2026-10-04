@@ -84,7 +84,7 @@ export const AdminManagementPage = () => {
  <button
  type="submit"
  disabled={loading}
- className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-black text-white bg-carbon-blue-60 hover:bg-carbon-blue-70 focus:outline-none focus:outline focus:outline-2 focus:-outline-offset-2 focus:ring-offset-2 focus:outline-carbon-blue-60 transition-colors disabled:opacity-50"
+ className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-black text-white bg-carbon-blue-60 hover:bg-carbon-blue-70 focus:outline-hidden focus:outline focus:outline-2 focus:-outline-offset-2 focus:ring-offset-2 focus:outline-carbon-blue-60 transition-colors disabled:opacity-50"
  >
  {loading ? 'Creating...' : 'Create Admin Account'}
  </button>

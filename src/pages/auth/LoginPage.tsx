@@ -44,7 +44,7 @@ export const LoginPage = () => {
  required
  value={email}
  onChange={(e) => setEmail(e.target.value)}
- className="appearance-none block w-full px-3 py-2 border border-[#8d8d8d] placeholder-gray-400 focus:outline-none focus:outline-carbon-blue-60 focus:border-black sm:text-sm font-medium"
+ className="appearance-none block w-full px-3 py-2 border border-[#8d8d8d] placeholder-gray-400 focus:outline-hidden focus:outline-carbon-blue-60 focus:border-black sm:text-sm font-medium"
  />
  </div>
  </div>
@@ -57,7 +57,7 @@ export const LoginPage = () => {
  required
  value={password}
  onChange={(e) => setPassword(e.target.value)}
- className="appearance-none block w-full px-3 py-2 border border-[#8d8d8d] placeholder-gray-400 focus:outline-none focus:outline-carbon-blue-60 focus:border-black sm:text-sm font-medium"
+ className="appearance-none block w-full px-3 py-2 border border-[#8d8d8d] placeholder-gray-400 focus:outline-hidden focus:outline-carbon-blue-60 focus:border-black sm:text-sm font-medium"
  />
  </div>
  </div>
@@ -72,7 +72,7 @@ export const LoginPage = () => {
  <button
  type="submit"
  disabled={loading}
- className="w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-black text-white bg-carbon-gray-100 hover:bg-black focus:outline-none focus:outline focus:outline-2 focus:-outline-offset-2 focus:ring-offset-2 focus:outline-carbon-gray-100 transition-colors"
+ className="w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-black text-white bg-carbon-gray-100 hover:bg-black focus:outline-hidden focus:outline focus:outline-2 focus:-outline-offset-2 focus:ring-offset-2 focus:outline-carbon-gray-100 transition-colors"
  >
  {loading ? 'Authenticating...' : 'Sign in'}
  </button>

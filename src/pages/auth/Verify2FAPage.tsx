@@ -41,7 +41,7 @@ export const Verify2FAPage = () => {
  required
  value={token}
  onChange={(e) => setToken(e.target.value)}
- className="appearance-none block w-full px-3 py-4 border border-[#8d8d8d] placeholder-gray-400 focus:outline-none focus:outline-carbon-blue-60 focus:border-black sm:text-sm text-center tracking-[0.5em] font-mono text-2xl"
+ className="appearance-none block w-full px-3 py-4 border border-[#8d8d8d] placeholder-gray-400 focus:outline-hidden focus:outline-carbon-blue-60 focus:border-black sm:text-sm text-center tracking-[0.5em] font-mono text-2xl"
  maxLength={6}
  />
  </div>
@@ -55,7 +55,7 @@ export const Verify2FAPage = () => {
  <button
  type="submit"
  disabled={loading || token.length < 6}
- className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-black text-white bg-carbon-blue-60 hover:bg-carbon-blue-70 focus:outline-none focus:outline focus:outline-2 focus:-outline-offset-2 focus:ring-offset-2 focus:outline-carbon-blue-60 transition-colors disabled:opacity-50"
+ className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-black text-white bg-carbon-blue-60 hover:bg-carbon-blue-70 focus:outline-hidden focus:outline focus:outline-2 focus:-outline-offset-2 focus:ring-offset-2 focus:outline-carbon-blue-60 transition-colors disabled:opacity-50"
  >
  {loading ? 'Verifying...' : 'Verify'}
  </button>
