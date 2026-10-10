@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TableSkeleton } from '../../components/common/TableSkeleton';
 import { AlertModal } from '../../components/common/AlertModal';
 import { ADMIN_API_URL as API_URL } from '../../config/runtime';
+import { useDataEvents } from '../../hooks/useDataEvents';
 
 interface PaymentReceipt {
  reference_number?: string | null;
@@ -53,6 +54,8 @@ export const DisputesPage = () => {
  const timer = window.setTimeout(() => void fetchDisputes(), 0);
  return () => window.clearTimeout(timer);
  }, [fetchDisputes]);
+
+ useDataEvents(['orders', 'receipts'], () => void fetchDisputes());
 
  const handleAction = async (orderId: string, action: 'force-approve' | 'uphold-rejection') => {
  setIsActionLoading(true);

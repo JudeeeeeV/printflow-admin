@@ -5,6 +5,7 @@ import { TableSkeleton } from '../../components/common/TableSkeleton';
 import { AlertModal } from '../../components/common/AlertModal';
 import { CheckmarkFilled, CloseOutline, ChevronRight, Document } from '@carbon/icons-react';
 import { ADMIN_API_URL as API_URL } from '../../config/runtime';
+import { useDataEvents } from '../../hooks/useDataEvents';
 
 interface PendingShop {
  id: string;
@@ -41,6 +42,8 @@ export const DashboardPage = () => {
  const timer = window.setTimeout(() => void fetchShops(), 0);
  return () => window.clearTimeout(timer);
  }, [fetchShops]);
+
+ useDataEvents(['shops'], () => void fetchShops());
 
  const handleVerify = async (status: 'VERIFIED' | 'REJECTED') => {
  if (!selectedShop) return;

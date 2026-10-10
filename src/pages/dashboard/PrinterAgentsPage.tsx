@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Printer, Renew, TrashCan } from '@carbon/icons-react';
 import { ADMIN_API_URL as API_URL } from '../../config/runtime';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
+import { useDataEvents } from '../../hooks/useDataEvents';
 
 interface PrinterAgent {
   id: string;
@@ -59,6 +60,8 @@ export const PrinterAgentsPage: React.FC = () => {
       window.clearInterval(timer);
     };
   }, [loadAgents]);
+
+  useDataEvents(['devices'], () => void loadAgents(false));
 
   const rescan = async (agent: PrinterAgent) => {
     setPendingId(agent.id);
