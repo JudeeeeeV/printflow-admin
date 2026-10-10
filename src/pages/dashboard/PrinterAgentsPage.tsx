@@ -4,6 +4,7 @@ import { Printer, Renew, TrashCan } from '@carbon/icons-react';
 import { ADMIN_API_URL as API_URL } from '../../config/runtime';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { useDataEvents } from '../../hooks/useDataEvents';
+import { cachedGet, invalidateAdminCache } from '../../services/cachedGet';
 
 interface PrinterAgent {
   id: string;
@@ -42,8 +43,7 @@ export const PrinterAgentsPage: React.FC = () => {
   const loadAgents = useCallback(async (showLoader = false) => {
     if (showLoader) setIsLoading(true);
     try {
-      const response = await axios.get<PrinterAgent[]>(`${API_URL}/daemon-devices`);
-      setAgents(response.data);
+      setAgents(await cachedGet<PrinterAgent[]>(`${API_URL}/daemon-devices`, showLoader));
       setError('');
     } catch (requestError: unknown) {
       setError(requestErrorMessage(requestError, 'Failed to load printer agents.'));
@@ -67,6 +67,7 @@ export const PrinterAgentsPage: React.FC = () => {
     setPendingId(agent.id);
     try {
       await axios.post(`${API_URL}/daemon-devices/${agent.id}/rescan`, {});
+      invalidateAdminCache();
       window.setTimeout(() => void loadAgents(false), 1_500);
     } catch (requestError: unknown) {
       setError(requestErrorMessage(requestError, 'Failed to request printer rescan.'));
@@ -79,6 +80,7 @@ export const PrinterAgentsPage: React.FC = () => {
     setPendingId(agent.id);
     try {
       await axios.post(`${API_URL}/daemon-devices/${agent.id}/revoke`, {});
+      invalidateAdminCache();
       await loadAgents(false);
     } catch (requestError: unknown) {
       setError(requestErrorMessage(requestError, 'Failed to revoke printer agent.'));

@@ -6,6 +6,7 @@ import { AlertModal } from '../../components/common/AlertModal';
 import { CheckmarkFilled, CloseOutline, ChevronRight, Document } from '@carbon/icons-react';
 import { ADMIN_API_URL as API_URL } from '../../config/runtime';
 import { useDataEvents } from '../../hooks/useDataEvents';
+import { cachedGet, invalidateAdminCache } from '../../services/cachedGet';
 
 interface PendingShop {
  id: string;
@@ -29,8 +30,7 @@ export const DashboardPage = () => {
 
  const fetchShops = useCallback(async () => {
  try {
- const res = await axios.get<PendingShop[]>(`${API_URL}/shops/pending`);
- setShops(res.data);
+ setShops(await cachedGet<PendingShop[]>(`${API_URL}/shops/pending`));
  } catch (err) {
  console.error('Failed to fetch pending shops', err);
  } finally {
@@ -55,6 +55,7 @@ export const DashboardPage = () => {
  setIsVerifying(true);
  try {
  await axios.post(`${API_URL}/shops/${selectedShop.id}/verify`, { status, reason: rejectReason });
+ invalidateAdminCache();
  
  // Remove shop from list
  setShops(prev => prev.filter(s => s.id !== selectedShop.id));

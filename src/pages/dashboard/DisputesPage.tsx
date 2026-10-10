@@ -5,6 +5,7 @@ import { TableSkeleton } from '../../components/common/TableSkeleton';
 import { AlertModal } from '../../components/common/AlertModal';
 import { ADMIN_API_URL as API_URL } from '../../config/runtime';
 import { useDataEvents } from '../../hooks/useDataEvents';
+import { cachedGet, invalidateAdminCache } from '../../services/cachedGet';
 
 interface PaymentReceipt {
  reference_number?: string | null;
@@ -41,8 +42,7 @@ export const DisputesPage = () => {
  const fetchDisputes = useCallback(async () => {
  setIsLoading(true);
  try {
- const res = await axios.get<Dispute[]>(`${API_URL}/disputes`);
- setDisputes(res.data);
+ setDisputes(await cachedGet<Dispute[]>(`${API_URL}/disputes`));
  } catch (requestError: unknown) {
  setError(errorMessage(requestError, 'Failed to fetch disputes'));
  } finally {
@@ -61,6 +61,7 @@ export const DisputesPage = () => {
  setIsActionLoading(true);
  try {
  await axios.post(`${API_URL}/orders/${orderId}/${action}`, {});
+ invalidateAdminCache();
  setNotice({ title: 'Action completed', message: 'The dispute decision was saved successfully.' });
  setSelectedDispute(null);
  fetchDisputes();
