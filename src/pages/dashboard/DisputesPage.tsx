@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TableSkeleton } from '../../components/common/TableSkeleton';
@@ -8,18 +8,23 @@ import { useDataEvents } from '../../hooks/useDataEvents';
 import { cachedGet, invalidateAdminCache } from '../../services/cachedGet';
 
 interface PaymentReceipt {
+ id: string | number;
  reference_number?: string | null;
  receipt_url?: string | null;
 }
 
 interface Dispute {
+ state: string;
+ current_receipt_id?: string | null;
+ acceptance_status?: string;
+ payment_status?: string;
  id: string;
  total: number;
  created_at: string;
  shop_rejection_reason?: string | null;
  dispute_reason?: string | null;
  shops?: { name?: string | null } | null;
- payment_receipts?: PaymentReceipt | PaymentReceipt[] | null;
+ payment_receipts?: PaymentReceipt[] | null;
 }
 
 const errorMessage = (error: unknown, fallback: string) => {
@@ -38,6 +43,10 @@ export const DisputesPage = () => {
  const [currentPage, setCurrentPage] = useState(1);
  const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
  const PAGE_SIZE = 10;
+ const [confirmed, setConfirmed] = useState(false);
+ const [reviewReason, setReviewReason] = useState('');
+ const pending = useRef(false);
+ const reviewDialog = useRef<HTMLDivElement>(null);
 
  const fetchDisputes = useCallback(async () => {
  setIsLoading(true);
@@ -58,9 +67,14 @@ export const DisputesPage = () => {
  useDataEvents(['orders', 'receipts'], () => void fetchDisputes());
 
  const handleAction = async (orderId: string, action: 'force-approve' | 'uphold-rejection') => {
+ if (pending.current) return;
+ if (!selectedDispute?.current_receipt_id || !selectedReceipt || (action === 'force-approve' ? !confirmed || !selectedReceipt.receipt_url || !selectedReceipt.reference_number?.trim() : !reviewReason.trim())) {
+ setNotice({ title: 'Review required', message: 'Confirm the current receipt, reference and amount, or provide the rejection reason.' }); return;
+ }
+ pending.current = true;
  setIsActionLoading(true);
  try {
- await axios.post(`${API_URL}/orders/${orderId}/${action}`, {});
+ await axios.post(`${API_URL}/orders/${orderId}/${action}`, { receiptId: selectedDispute.current_receipt_id, confirmed, reason: reviewReason.trim() || undefined });
  invalidateAdminCache();
  setNotice({ title: 'Action completed', message: 'The dispute decision was saved successfully.' });
  setSelectedDispute(null);
@@ -71,15 +85,31 @@ export const DisputesPage = () => {
  message: errorMessage(requestError, 'The dispute decision could not be saved.'),
  });
  } finally {
+ pending.current = false;
  setIsActionLoading(false);
  }
  };
 
- const selectedReceipt = selectedDispute
- ? Array.isArray(selectedDispute.payment_receipts)
- ? selectedDispute.payment_receipts[0]
- : selectedDispute.payment_receipts
- : null;
+ const selectedReceipt = selectedDispute?.payment_receipts?.find(receipt => String(receipt.id) === selectedDispute.current_receipt_id);
+ const reviewOpen = Boolean(selectedDispute);
+
+ useEffect(() => {
+ if (!reviewOpen) return;
+ const previous = document.activeElement as HTMLElement | null;
+ const overflow = document.body.style.overflow;
+ document.body.style.overflow = 'hidden';
+ reviewDialog.current?.focus();
+ const handleKey = (event: KeyboardEvent) => {
+ if (event.key === 'Escape' && !pending.current) { event.preventDefault(); setSelectedDispute(null); }
+ if (event.key !== 'Tab') return;
+ const controls = Array.from(reviewDialog.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href]') || []);
+ const first = controls[0], last = controls[controls.length - 1];
+ if (event.shiftKey && (document.activeElement === first || document.activeElement === reviewDialog.current)) { event.preventDefault(); last?.focus(); }
+ else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+ };
+ document.addEventListener('keydown', handleKey);
+ return () => { document.removeEventListener('keydown', handleKey); document.body.style.overflow = overflow; if (previous?.isConnected) previous.focus(); };
+ }, [reviewOpen]);
 
  if (isLoading) {
  return <TableSkeleton columns={5} rows={5} />;
@@ -130,7 +160,7 @@ export const DisputesPage = () => {
  </div>
  </div>
  <button 
- onClick={() => setSelectedDispute(dispute)}
+ onClick={() => { setSelectedDispute(dispute); setConfirmed(false); setReviewReason(''); }}
  className="w-full py-2 bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white font-bold text-sm transition-colors"
  >
  Review Case
@@ -179,26 +209,28 @@ export const DisputesPage = () => {
  initial={{ opacity: 0 }}
  animate={{ opacity: 1 }}
  exit={{ opacity: 0 }}
- onClick={() => setSelectedDispute(null)}
+ onClick={() => { if (!pending.current) setSelectedDispute(null); }}
  className="absolute inset-0 bg-carbon-blue-100/40 backdrop-blur-sm"
  />
  <motion.div
  initial={{ opacity: 0, scale: 0.95 }}
  animate={{ opacity: 1, scale: 1 }}
  exit={{ opacity: 0, scale: 0.95 }}
- className="relative w-full max-w-4xl bg-white flex flex-col max-h-[90vh] z-10"
+ ref={reviewDialog}
+ role="dialog" aria-modal="true" aria-labelledby="dispute-review-title" aria-busy={isActionLoading} tabIndex={-1}
+ className="relative w-full max-w-4xl bg-white flex flex-col max-h-[90vh] overflow-y-auto z-10"
  >
  <div className="flex justify-between items-center p-6 border-b border-[#e0e0e0] shrink-0">
  <div>
- <h3 className="text-2xl font-black text-carbon-gray-100">Dispute Review</h3>
+ <h3 id="dispute-review-title" className="text-2xl font-black text-carbon-gray-100">Dispute Review</h3>
  <p className="text-sm font-medium text-gray-500">Order #{selectedDispute.id}</p>
  </div>
- <button onClick={() => setSelectedDispute(null)} className="p-2 text-gray-400 hover:text-carbon-gray-100 transition-colors hover:bg-gray-100">
+ <button aria-label="Close dispute review" disabled={isActionLoading} onClick={() => { if (!pending.current) setSelectedDispute(null); }} className="min-h-11 min-w-11 p-2 text-gray-400 hover:text-carbon-gray-100 transition-colors hover:bg-gray-100 disabled:opacity-50">
  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
  </button>
  </div>
 
- <div className="flex-1 overflow-y-auto p-6 flex flex-col md:flex-row gap-8">
+ <div className="min-h-0 flex-1 overflow-y-auto p-6 flex flex-col md:flex-row gap-8">
  <div className="flex-1 space-y-6">
  <div>
  <h4 className="font-bold text-carbon-gray-100 border-b border-[#e0e0e0] pb-2 mb-3">Shop's Rejection Reason</h4>
@@ -217,6 +249,10 @@ export const DisputesPage = () => {
  <div className="bg-carbon-gray-10 p-4 text-sm space-y-2 font-medium text-gray-700 border border-[#e0e0e0]">
  <p><strong>Shop:</strong> {selectedDispute.shops?.name}</p>
  <p><strong>Amount Due:</strong> ₱{selectedDispute.total}</p>
+ <p><strong>Shop acceptance:</strong> {selectedDispute.acceptance_status || 'PENDING'}</p>
+ <p><strong>Order status:</strong> {selectedDispute.state.replaceAll('_', ' ')}</p>
+ <p>Verifying payment does not accept the order on behalf of the shop.</p>
+ {['CANCELLED', 'REJECTED', 'EXPIRED'].includes(selectedDispute.state) && <p className="text-amber-800">This order is closed. Verifying payment creates a manual refund obligation without reopening production.</p>}
  <p><strong>Ref Number:</strong> {selectedReceipt?.reference_number || 'N/A'}</p>
  </div>
  </div>
@@ -238,21 +274,25 @@ export const DisputesPage = () => {
  </div>
  </div>
 
- <div className="p-6 border-t border-[#e0e0e0] bg-carbon-gray-10 shrink-0 flex justify-end space-x-4">
+ <div className="space-y-3 border-t border-gray-300 bg-carbon-gray-10 p-4 sm:p-6">
+ <label className="flex min-h-11 items-start gap-2 text-sm font-medium"><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} disabled={isActionLoading} className="mt-1 h-5 w-5 shrink-0" /><span>I confirmed the current receipt, reference and full amount against shop transaction records.</span></label>
+ <label className="block text-sm font-bold">Reason for upholding rejection<textarea value={reviewReason} onChange={event => setReviewReason(event.target.value)} maxLength={500} disabled={isActionLoading} className="mt-1 min-h-16 w-full border border-gray-500 bg-white p-2 font-normal focus:outline-carbon-blue-60" /></label>
+ </div>
+ <div className="p-4 sm:p-6 border-t border-[#e0e0e0] bg-carbon-gray-10 shrink-0 flex flex-wrap justify-end gap-3">
  <button
  onClick={() => handleAction(selectedDispute.id, 'uphold-rejection')}
- disabled={isActionLoading}
+ disabled={isActionLoading || !selectedReceipt || !reviewReason.trim()}
  className="px-6 py-3 font-bold text-carbon-gray-100 bg-white border border-gray-300 hover:bg-gray-100 hover:border-carbon-gray-100 transition-colors disabled:opacity-50"
  >
  Uphold Rejection
  </button>
  <button
  onClick={() => handleAction(selectedDispute.id, 'force-approve')}
- disabled={isActionLoading}
+ disabled={isActionLoading || !selectedReceipt?.receipt_url || !selectedReceipt?.reference_number?.trim() || !confirmed}
  className="px-6 py-3 font-bold text-white bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center"
  >
  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
- Force Approve Payment
+ Verify disputed payment
  </button>
  </div>
  </motion.div>
