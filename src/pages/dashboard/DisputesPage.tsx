@@ -41,39 +41,59 @@ export const DisputesPage = () => {
  const [error, setError] = useState('');
  const [selectedDisputeId, setSelectedDisputeId] = useState<string | null>(null);
  const selectedDispute = disputes.find(item => item.id === selectedDisputeId) ?? null;
+ const selectedReceipt = selectedDispute?.payment_receipts?.find(receipt => String(receipt.id) === selectedDispute.current_receipt_id);
+ // A renewed signed URL is still the same evidence. Financial/context changes
+ // require a new confirmation, even if the image URL itself is unchanged.
+ const evidenceKey = selectedDispute ? JSON.stringify([
+  selectedDispute.id, selectedDispute.current_receipt_id, selectedReceipt?.reference_number,
+  selectedDispute.total, selectedDispute.state, selectedDispute.payment_method,
+  selectedDispute.payment_status, selectedDispute.acceptance_status,
+ ]) : null;
+ const imageKey = evidenceKey && selectedReceipt?.receipt_url
+  ? JSON.stringify([evidenceKey, selectedReceipt.receipt_url]) : null;
  const setSelectedDispute = (item: Dispute | null) => setSelectedDisputeId(item?.id ?? null);
  const [isActionLoading, setIsActionLoading] = useState(false);
  const [currentPage, setCurrentPage] = useState(1);
  const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
  const PAGE_SIZE = 10;
- const [confirmed, setConfirmed] = useState(false);
+ const [confirmedEvidence, setConfirmedEvidence] = useState<string | null>(null);
+ const confirmed = evidenceKey !== null && confirmedEvidence === evidenceKey;
  const [reviewReason, setReviewReason] = useState('');
  const pending = useRef(false);
  const reviewDialog = useRef<HTMLDivElement>(null);
  const loaded = useRef(false);
+ const refreshGeneration = useRef(0);
  const noticeOpen = useRef(false);
  noticeOpen.current = Boolean(notice);
- const [receiptImageLoaded, setReceiptImageLoaded] = useState(false);
+ const [loadedImage, setLoadedImage] = useState<string | null>(null);
+ const receiptImageLoaded = imageKey !== null && loadedImage === imageKey;
+ const currentImageKey = useRef(imageKey);
+ currentImageKey.current = imageKey;
 
  const fetchDisputes = useCallback(async () => {
+  const generation = ++refreshGeneration.current;
   try {
    const latest = await cachedGet<Dispute[]>(`${API_URL}/disputes`);
+   if (generation !== refreshGeneration.current) return;
    setDisputes(latest);
    setCurrentPage(page => Math.max(1, Math.min(page, Math.ceil(latest.length / 10) || 1)));
    setError('');
   } catch (requestError: unknown) {
+   if (generation !== refreshGeneration.current) return;
    const message = errorMessage(requestError, 'Failed to fetch disputes');
    if (!loaded.current) setError(message);
-   else setNotice({ title: 'Refresh failed', message });
+   else setNotice(previous => previous ?? { title: 'Refresh failed', message });
   } finally {
-   loaded.current = true;
-   setIsLoading(false);
+   if (generation === refreshGeneration.current) {
+    loaded.current = true;
+    setIsLoading(false);
+   }
   }
  }, []);
 
  useEffect(() => {
  const timer = window.setTimeout(() => void fetchDisputes(), 0);
- return () => window.clearTimeout(timer);
+ return () => { window.clearTimeout(timer); refreshGeneration.current++; };
  }, [fetchDisputes]);
 
  useDataEvents(['orders', 'receipts'], () => void fetchDisputes());
@@ -104,9 +124,11 @@ export const DisputesPage = () => {
  }
  };
 
- const selectedReceipt = selectedDispute?.payment_receipts?.find(receipt => String(receipt.id) === selectedDispute.current_receipt_id);
  const reviewOpen = Boolean(selectedDispute);
- useEffect(() => { setReceiptImageLoaded(false); }, [selectedReceipt?.receipt_url]);
+ useEffect(() => {
+  setConfirmedEvidence(null);
+  setReviewReason('');
+ }, [evidenceKey]);
 
  useEffect(() => {
  if (!reviewOpen) return;
@@ -175,7 +197,7 @@ export const DisputesPage = () => {
  </div>
  </div>
  <button 
- onClick={() => { invalidateAdminCache(); void fetchDisputes(); setSelectedDispute(dispute); setConfirmed(false); setReviewReason(''); setReceiptImageLoaded(false); }}
+ onClick={() => { invalidateAdminCache(); void fetchDisputes(); setSelectedDispute(dispute); setConfirmedEvidence(null); setReviewReason(''); setLoadedImage(null); }}
  className="w-full py-2 bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white font-bold text-sm transition-colors"
  >
  Review Case
@@ -277,10 +299,11 @@ export const DisputesPage = () => {
  <div className="flex-1 border border-[#e0e0e0] bg-carbon-gray-10 flex items-center justify-center p-2 min-h-[300px]">
  {selectedReceipt?.receipt_url ? (
  <img 
+ key={imageKey}
  src={selectedReceipt.receipt_url}
  alt="Receipt" 
- onLoad={() => setReceiptImageLoaded(true)}
- onError={() => setReceiptImageLoaded(false)}
+ onLoad={() => { if (currentImageKey.current === imageKey) setLoadedImage(imageKey); }}
+ onError={() => setLoadedImage(previous => previous === imageKey ? null : previous)}
  className="max-w-full max-h-full object-contain"
  />
  ) : (
@@ -291,7 +314,7 @@ export const DisputesPage = () => {
  </div>
 
  <div className="space-y-3 border-t border-gray-300 bg-carbon-gray-10 p-4 sm:p-6">
- <label className="flex min-h-11 items-start gap-2 text-sm font-medium"><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} disabled={isActionLoading} className="mt-1 h-5 w-5 shrink-0" /><span>I confirmed the current receipt, reference and full amount against shop transaction records.</span></label>
+ <label className="flex min-h-11 items-start gap-2 text-sm font-medium"><input type="checkbox" checked={confirmed} onChange={event => setConfirmedEvidence(event.target.checked ? evidenceKey : null)} disabled={isActionLoading} className="mt-1 h-5 w-5 shrink-0" /><span>I confirmed the current receipt, reference and full amount against shop transaction records.</span></label>
  <label className="block text-sm font-bold">Reason for upholding rejection<textarea value={reviewReason} onChange={event => setReviewReason(event.target.value)} maxLength={500} disabled={isActionLoading} className="mt-1 min-h-16 w-full border border-gray-500 bg-white p-2 font-normal focus:outline-carbon-blue-60" /></label>
  </div>
  <div className="p-4 sm:p-6 border-t border-[#e0e0e0] bg-carbon-gray-10 shrink-0 flex flex-wrap justify-end gap-3">
