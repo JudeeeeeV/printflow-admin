@@ -17,6 +17,7 @@ interface Dispute {
  state: string;
  current_receipt_id?: string | null;
  acceptance_status?: string;
+ payment_method?: string;
  payment_status?: string;
  id: string;
  total: number;
@@ -249,9 +250,9 @@ export const DisputesPage = () => {
  <div className="bg-carbon-gray-10 p-4 text-sm space-y-2 font-medium text-gray-700 border border-[#e0e0e0]">
  <p><strong>Shop:</strong> {selectedDispute.shops?.name}</p>
  <p><strong>Amount Due:</strong> ₱{selectedDispute.total}</p>
- <p><strong>Shop acceptance:</strong> {selectedDispute.acceptance_status || 'PENDING'}</p>
+ {selectedDispute.payment_method === 'CASH_ON_PICKUP' && <p><strong>Shop acceptance:</strong> {selectedDispute.acceptance_status || 'PENDING'}</p>}
  <p><strong>Order status:</strong> {selectedDispute.state.replaceAll('_', ' ')}</p>
- <p>Verifying payment does not accept the order on behalf of the shop.</p>
+ <p>Verifying GCash payment authorizes production when the document is valid.</p>
  {['CANCELLED', 'REJECTED', 'EXPIRED'].includes(selectedDispute.state) && <p className="text-amber-800">This order is closed. Verifying payment creates a manual refund obligation without reopening production.</p>}
  <p><strong>Ref Number:</strong> {selectedReceipt?.reference_number || 'N/A'}</p>
  </div>
