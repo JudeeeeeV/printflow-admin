@@ -39,7 +39,9 @@ export const DisputesPage = () => {
  const [disputes, setDisputes] = useState<Dispute[]>([]);
  const [isLoading, setIsLoading] = useState(true);
  const [error, setError] = useState('');
- const [selectedDispute, setSelectedDispute] = useState<Dispute | null>(null);
+ const [selectedDisputeId, setSelectedDisputeId] = useState<string | null>(null);
+ const selectedDispute = disputes.find(item => item.id === selectedDisputeId) ?? null;
+ const setSelectedDispute = (item: Dispute | null) => setSelectedDisputeId(item?.id ?? null);
  const [isActionLoading, setIsActionLoading] = useState(false);
  const [currentPage, setCurrentPage] = useState(1);
  const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
@@ -48,16 +50,25 @@ export const DisputesPage = () => {
  const [reviewReason, setReviewReason] = useState('');
  const pending = useRef(false);
  const reviewDialog = useRef<HTMLDivElement>(null);
+ const loaded = useRef(false);
+ const noticeOpen = useRef(false);
+ noticeOpen.current = Boolean(notice);
+ const [receiptImageLoaded, setReceiptImageLoaded] = useState(false);
 
  const fetchDisputes = useCallback(async () => {
- setIsLoading(true);
- try {
- setDisputes(await cachedGet<Dispute[]>(`${API_URL}/disputes`));
- } catch (requestError: unknown) {
- setError(errorMessage(requestError, 'Failed to fetch disputes'));
- } finally {
- setIsLoading(false);
- }
+  try {
+   const latest = await cachedGet<Dispute[]>(`${API_URL}/disputes`);
+   setDisputes(latest);
+   setCurrentPage(page => Math.max(1, Math.min(page, Math.ceil(latest.length / 10) || 1)));
+   setError('');
+  } catch (requestError: unknown) {
+   const message = errorMessage(requestError, 'Failed to fetch disputes');
+   if (!loaded.current) setError(message);
+   else setNotice({ title: 'Refresh failed', message });
+  } finally {
+   loaded.current = true;
+   setIsLoading(false);
+  }
  }, []);
 
  useEffect(() => {
@@ -69,7 +80,7 @@ export const DisputesPage = () => {
 
  const handleAction = async (orderId: string, action: 'force-approve' | 'uphold-rejection') => {
  if (pending.current) return;
- if (!selectedDispute?.current_receipt_id || !selectedReceipt || (action === 'force-approve' ? !confirmed || !selectedReceipt.receipt_url || !selectedReceipt.reference_number?.trim() : !reviewReason.trim())) {
+ if (!selectedDispute?.current_receipt_id || !selectedReceipt || (action === 'force-approve' ? !confirmed || !receiptImageLoaded || !selectedReceipt.receipt_url || !selectedReceipt.reference_number?.trim() : !reviewReason.trim())) {
  setNotice({ title: 'Review required', message: 'Confirm the current receipt, reference and amount, or provide the rejection reason.' }); return;
  }
  pending.current = true;
@@ -79,8 +90,10 @@ export const DisputesPage = () => {
  invalidateAdminCache();
  setNotice({ title: 'Action completed', message: 'The dispute decision was saved successfully.' });
  setSelectedDispute(null);
- fetchDisputes();
+ void fetchDisputes();
  } catch (requestError: unknown) {
+ invalidateAdminCache();
+ void fetchDisputes();
  setNotice({
  title: 'Action failed',
  message: errorMessage(requestError, 'The dispute decision could not be saved.'),
@@ -93,6 +106,7 @@ export const DisputesPage = () => {
 
  const selectedReceipt = selectedDispute?.payment_receipts?.find(receipt => String(receipt.id) === selectedDispute.current_receipt_id);
  const reviewOpen = Boolean(selectedDispute);
+ useEffect(() => { setReceiptImageLoaded(false); }, [selectedReceipt?.receipt_url]);
 
  useEffect(() => {
  if (!reviewOpen) return;
@@ -101,7 +115,7 @@ export const DisputesPage = () => {
  document.body.style.overflow = 'hidden';
  reviewDialog.current?.focus();
  const handleKey = (event: KeyboardEvent) => {
- if (event.key === 'Escape' && !pending.current) { event.preventDefault(); setSelectedDispute(null); }
+ if (event.key === 'Escape' && !pending.current && !noticeOpen.current) { event.preventDefault(); setSelectedDispute(null); }
  if (event.key !== 'Tab') return;
  const controls = Array.from(reviewDialog.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href]') || []);
  const first = controls[0], last = controls[controls.length - 1];
@@ -161,7 +175,7 @@ export const DisputesPage = () => {
  </div>
  </div>
  <button 
- onClick={() => { setSelectedDispute(dispute); setConfirmed(false); setReviewReason(''); }}
+ onClick={() => { invalidateAdminCache(); void fetchDisputes(); setSelectedDispute(dispute); setConfirmed(false); setReviewReason(''); setReceiptImageLoaded(false); }}
  className="w-full py-2 bg-carbon-blue-60 hover:bg-carbon-blue-70 text-white font-bold text-sm transition-colors"
  >
  Review Case
@@ -250,9 +264,8 @@ export const DisputesPage = () => {
  <div className="bg-carbon-gray-10 p-4 text-sm space-y-2 font-medium text-gray-700 border border-[#e0e0e0]">
  <p><strong>Shop:</strong> {selectedDispute.shops?.name}</p>
  <p><strong>Amount Due:</strong> ₱{selectedDispute.total}</p>
- {selectedDispute.payment_method === 'CASH_ON_PICKUP' && <p><strong>Shop acceptance:</strong> {selectedDispute.acceptance_status || 'PENDING'}</p>}
  <p><strong>Order status:</strong> {selectedDispute.state.replaceAll('_', ' ')}</p>
- <p>Verifying GCash payment authorizes production when the document is valid.</p>
+ {!['CANCELLED', 'REJECTED', 'EXPIRED', 'COMPLETED'].includes(selectedDispute.state) && <p>Verifying an eligible GCash payment authorizes production when the document is valid and the shop is verified.</p>}
  {['CANCELLED', 'REJECTED', 'EXPIRED'].includes(selectedDispute.state) && <p className="text-amber-800">This order is closed. Verifying payment creates a manual refund obligation without reopening production.</p>}
  <p><strong>Ref Number:</strong> {selectedReceipt?.reference_number || 'N/A'}</p>
  </div>
@@ -266,6 +279,8 @@ export const DisputesPage = () => {
  <img 
  src={selectedReceipt.receipt_url}
  alt="Receipt" 
+ onLoad={() => setReceiptImageLoaded(true)}
+ onError={() => setReceiptImageLoaded(false)}
  className="max-w-full max-h-full object-contain"
  />
  ) : (
@@ -289,7 +304,7 @@ export const DisputesPage = () => {
  </button>
  <button
  onClick={() => handleAction(selectedDispute.id, 'force-approve')}
- disabled={isActionLoading || !selectedReceipt?.receipt_url || !selectedReceipt?.reference_number?.trim() || !confirmed}
+ disabled={isActionLoading || !selectedReceipt?.receipt_url || !receiptImageLoaded || !selectedReceipt?.reference_number?.trim() || !confirmed}
  className="px-6 py-3 font-bold text-white bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center"
  >
  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
