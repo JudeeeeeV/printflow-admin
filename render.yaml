@@ -2,6 +2,7 @@ services:
   - type: web
     name: printflow-admin
     runtime: static
+    autoDeployTrigger: checksPass
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
     routes:
